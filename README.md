@@ -1,67 +1,91 @@
-# agencia-viagem-ai
+# Mundo Viagens AI - Travel Agency Assistant
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+This project is an AI-powered travel agency assistant built with **Quarkus**, **LangChain4j**, and **Ollama**. It uses **RAG (Retrieval-Augmented Generation)** to provide accurate information about travel packages and **MCP (Model Context Protocol)** to perform actions like managing bookings through a specialized service.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+---
 
-## Running the application in dev mode
+## 🏗️ Architecture
 
-You can run your application in dev mode that enables live coding using:
+The project is divided into two main modules:
 
-```shell script
+1.  **`travel-agency-ai`**: The core AI service. It uses LangChain4j to integrate with the Ollama LLM, manages conversation memory, performs RAG using a PgVector database, and connects to external tools via MCP.
+2.  **`mcp-booking-server`**: A dedicated MCP server that exposes tools for booking management (querying details, canceling reservations, listing by category).
+
+### 🛠️ Key Technologies
+
+*   **[Quarkus](https://quarkus.io/)**: The Java framework powering both services.
+*   **[LangChain4j](https://github.com/langchain4j/langchain4j)**: Integration layer for Large Language Models.
+*   **[Ollama](https://ollama.com/)**: Local LLM runner (defaults to `gpt-oss:20b`).
+*   **[MCP (Model Context Protocol)](https://modelcontextprotocol.io/)**: Used for seamless tool invocation between the AI agent and the booking server.
+*   **[PgVector](https://github.com/pgvector/pgvector)**: Vector database for RAG (Retrieval-Augmented Generation).
+*   **Embedding Model**: `nomic-embed-text` (via Ollama).
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+*   **Java 21+**
+*   **Maven 3.9+**
+*   **Ollama** installed and running.
+    *   Pull required models:
+        ```bash
+        ollama pull gpt-oss:20b
+        ollama pull nomic-embed-text
+        ```
+*   **PostgreSQL with PgVector** extension enabled (or use the provided Docker Compose if available, otherwise ensure connection properties in `application.properties` are correct).
+
+### Running the Project
+
+#### 1. Start the MCP Booking Server
+Navigate to the server directory and run:
+```bash
+cd mcp-booking-server
+./mvnw quarkus:dev -Dquarkus.http.port=8081
+```
+The MCP server will be available at `http://localhost:8081/mcp/sse/`.
+
+#### 2. Start the AI Assistant
+Navigate to the AI assistant directory and run:
+```bash
+cd travel-agency-ai
 ./mvnw quarkus:dev
 ```
+The assistant will be available at `http://localhost:8080/travel`.
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+---
 
-## Packaging and running the application
+## 💬 API Usage
 
-The application can be packaged using:
+The main entry point for the assistant is a POST request to `/travel`. It requires a user name header for session/memory management.
 
-```shell script
-./mvnw package
+### Example Request
+```bash
+curl -X POST http://localhost:8080/travel \
+     -H "Content-Type: text/plain" \
+     -H "X-User-Name: Natan" \
+     -d "Quais são os detalhes do pacote Amazônia?"
 ```
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+### Available Tools (via MCP)
+*   `getBookingDetails(bookingId)`: Retrieve complete details of a specific booking.
+*   `cancelBooking(bookingId, name)`: Cancel an existing booking.
+*   `listPackagesByCategory(category)`: List available travel packages by category (e.g., `ADVENTURE`, `TREASURES`).
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+---
 
-If you want to build an _über-jar_, execute the following command:
+## 📂 Project Structure
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+*   `travel-agency-ai/src/main/resources/rag/`: Contains documents (`pacotes-viagem.md`) used for RAG to provide info on travel packages.
+*   `travel-agency-ai/src/main/java/com/natancode/ai/`: AI logic, configuration, and REST endpoints.
+*   `mcp-booking-server/src/main/java/com/natancode/travel/`: Booking service logic and MCP tool definitions.
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+---
 
-## Creating a native executable
+## 📝 Configuration
 
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/agencia-viagem-ai-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- REST ([guide](https://quarkus.io/guides/rest)): A Jakarta REST implementation utilizing build time processing and Vert.x. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it.
-- LangChain4j Ollama ([guide](https://docs.quarkiverse.io/quarkus-langchain4j/dev/guide-ollama.html)): Provides the basic integration of Ollama with LangChain4j
-
-## Provided Code
-
-### REST
-
-Easily start your REST Web Services
-
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+Key settings can be found in `travel-agency-ai/src/main/resources/application.properties`:
+*   `quarkus.langchain4j.ollama.base-url`: Ollama API endpoint.
+*   `quarkus.langchain4j.pgvector.*`: Vector database settings for RAG.
+*   `quarkus.langchain4j.mcp.booking-server.*`: Connection details for the MCP server.

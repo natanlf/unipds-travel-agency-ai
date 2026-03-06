@@ -8,7 +8,7 @@ This project is an AI-powered travel agency assistant built with **Quarkus**, **
 
 The project is divided into two main modules:
 
-1.  **`travel-agency-ai`**: The core AI service. It uses LangChain4j to integrate with the Ollama LLM, manages conversation memory, performs RAG using a PgVector database, and connects to external tools via MCP.
+1.  **`travel-agency-ai`**: The core AI service. It uses LangChain4j to integrate with the Ollama LLM, manages conversation memory, performs RAG using a PgVector database, connects to external tools via MCP, and uses **Guardrails** for input security.
 2.  **`mcp-booking-server`**: A dedicated MCP server that exposes tools for booking management (querying details, canceling reservations, listing by category).
 
 ### 🛠️ Key Technologies
@@ -18,6 +18,7 @@ The project is divided into two main modules:
 *   **[Ollama](https://ollama.com/)**: Local LLM runner (defaults to `gpt-oss:20b`).
 *   **[MCP (Model Context Protocol)](https://modelcontextprotocol.io/)**: Used for seamless tool invocation between the AI agent and the booking server.
 *   **[PgVector](https://github.com/pgvector/pgvector)**: Vector database for RAG (Retrieval-Augmented Generation).
+*   **[Guardrails](https://docs.langchain4j.dev/tutorials/ai-services/#guardrails)**: Used for input/output validation and security (e.g., preventing prompt injection).
 *   **Embedding Model**: `nomic-embed-text` (via Ollama).
 
 ---
@@ -72,6 +73,17 @@ curl -X POST http://localhost:8080/travel \
 *   `getBookingDetails(bookingId)`: Retrieve complete details of a specific booking.
 *   `cancelBooking(bookingId, name)`: Cancel an existing booking.
 *   `listPackagesByCategory(category)`: List available travel packages by category (e.g., `ADVENTURE`, `TREASURES`).
+
+---
+
+## 🛡️ Security & Guardrails
+
+To ensure safe interactions, the project implements **Input Guardrails** to prevent prompt injection and malicious use:
+
+*   **`InjectionGuard`**: An implementation of `InputGuardrail` that intercepts user messages before they reach the LLM.
+*   **`PromptSecurityExpert`**: A specialized AI service that analyzes incoming prompts for potential attacks or instruction overrides.
+
+If a malicious prompt is detected, the system automatically blocks the request with a security warning.
 
 ---
 
